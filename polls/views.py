@@ -3,4 +3,4 @@ from django.shortcuts import render
 
 # Create your views here.
 def index(request):
-    return HttpResponse("Index view response.")
+    return HttpResponse("Polls index view response.")
