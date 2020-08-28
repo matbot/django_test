@@ -1,6 +1,7 @@
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
 from django.template import loader
 from django.shortcuts import Http404, get_object_or_404, render
+from django.urls import reverse
 
 from .models import Question, Choice
 
@@ -26,8 +27,19 @@ def detail(req, question_id):
 
 
 def vote(req, question_id):
-    return HttpResponse("Voting on question: %s" % question_id)
+    question = get_object_or_404(Question, pk=question_id)
+    try:
+        # potential race condition; see: https://docs.djangoproject.com/en/3.0/ref/models/expressions/#avoiding-race-conditions-using-f
+        selected_choice = question.choice_set.get(pk=req.POST['choice'])
+    except (KeyError, Choice.DoesNotExist):
+        # redirect back to input form.
+        return render(req, 'polls/detail.html', {'question': question, 'error_message': "No choice selected."})
+    else:
+        selected_choice.votes += 1
+        selected_choice.save()
+        return HttpResponseRedirect(reverse('polls:results', args=(question.id,)))
 
 
 def results(req, question_id):
-    return HttpResponse("Results for question: %s" % question_id)
+    question = get_object_or_404(Question, pk=question_id)
+    return render(req, 'polls/results.html', {'question': question})
